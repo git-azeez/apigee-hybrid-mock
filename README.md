@@ -162,7 +162,3 @@ The workflow is defined in `apigee-workflow-template.yaml` and executes as a DAG
 * Executes `mvn clean install` to deploy the bundle to Apigee.
 
 
-
-```
-
-```
