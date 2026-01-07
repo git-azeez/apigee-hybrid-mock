@@ -3,6 +3,11 @@
 
 This repository contains the source code for Apigee Hybrid API proxies and a reusable CI/CD pipeline template using **Argo Workflows**. It is designed to deploy proxies to Apigee Hybrid on Google Cloud using **Workload Identity** (keyless authentication) for security and a **WorkflowTemplate** architecture for reusability.
 
+
+apigee-edge-maven-plugin is a build and deploy utility for building and deploying the Apigee ApiProxy's/Application bundles into Apigee Platform. The code is distributed under the Apache License 2.0.
+
+
+
 ## 📂 Project Structure
 
 ```text
