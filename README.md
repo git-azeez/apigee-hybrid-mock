@@ -93,6 +93,17 @@ kubectl annotate serviceaccount argo-workflow -n argo \
 ```
 
 ---
+## ⚙️ Configuration (Maven)
+
+The deployment logic is handled by the **Parent POM** (`src/gateway/parent-pom/pom.xml`).
+
+* **API Version:** `v1`
+* **Auth Type:** `oauth` (Bearer Token)
+* **Target:** `https://apigee.googleapis.com`
+
+If you need to change the organization or environment globally, update the `<properties>` section in `src/gateway/parent-pom/pom.xml`.
+
+---
 
 ## 🏃‍♂️ How to Run the Pipeline
 
