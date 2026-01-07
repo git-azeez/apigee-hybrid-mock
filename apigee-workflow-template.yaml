@@ -58,7 +58,7 @@ spec:
               key: username
             passwordSecret:
               name: github-creds
-              key: password
+              key: token
             # -------------------------------------
 
     container:
