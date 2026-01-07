@@ -191,6 +191,90 @@ The workflow is defined in `apigee-workflow-template.yaml` and executes as a DAG
 * Executes `mvn clean install` to deploy the bundle to Apigee.
 
 ---
+
+That is a smart addition. Highlighting a **Declarative Job** section shows that the system is not just a "script runner" but a robust orchestration platform where specific tasks can be defined, versioned, and executed as standard Kubernetes resources for debugging or specialized operational needs.
+
+Add this section to your `README.md` right after the **Declarative Deployment** section:
+
+---
+
+
+```markdown
+## 🛠 Troubleshooting with Declarative Jobs
+
+In complex scenarios where logs are insufficient, you can create a **Declarative Troubleshooting Job**. This allows you to "freeze" a specific execution context (parameters, versions, and configurations) into a YAML manifest for deep inspection and repeatable debugging.
+
+### 1. Create a Debug Manifest (`debug-walmart.yaml`)
+Unlike a standard workflow, a debug job is often hardcoded with specific commits or parameters to isolate a failure.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: apigee-debug-job-
+  namespace: argo
+  labels:
+    troubleshooting: "true"
+spec:
+  workflowTemplateRef:
+    name: apigee-proxy-deployer
+  arguments:
+    parameters:
+      - name: repo_url
+        value: "[https://github.com/git-azeez/apigee-hybrid-mock.git](https://github.com/git-azeez/apigee-hybrid-mock.git)"
+      - name: proxy_path
+        value: "src/gateway/hello-world-mock"
+      - name: apigee_env
+        value: "walmart"
+  # Keeps the pods around for 1 hour after failure for manual inspection
+  ttlStrategy:
+    secondsAfterCompletion: 3600 
+    secondsAfterFailure: 3600
+
+```
+
+### 2. Execute the Debug Job
+
+Applying this manifest ensures that even if the Git repo changes, your troubleshooting instance remains consistent:
+
+```bash
+kubectl apply -f debug-walmart.yaml
+
+```
+
+### 3. Deep Dive into the Pods
+
+Since the `ttlStrategy` keeps the pods alive, you can "shell into" the Maven container if the deployment fails to check the local environment variables or the generated bundle:
+
+```bash
+# Get the name of the failed Maven pod
+kubectl get pods -n argo -l troubleshooting=true
+
+# Shell into the container for manual inspection
+kubectl exec -it <POD_NAME> -c main -n argo -- /bin/bash
+
+```
+
+---
+
+## 🔍 Audit and Governance
+
+By using declarative manifests for both deployment and troubleshooting, every action is recorded in the Kubernetes API server. This provides a clear audit trail of:
+
+* **Who** triggered the job (via `kubectl` metadata).
+* **What** parameters were used.
+* **When** the failure occurred.
+
+```
+
+### Why this adds value to your demo:
+1. **Context Retention**: Standard workflows often delete pods immediately to save resources. Your "Troubleshooting Job" explicitly uses `ttlStrategy` to keep the evidence available for developers.
+2. **Isolation**: It shows you can bypass a "broken" CI trigger to run a manual, controlled test using the same trusted `WorkflowTemplate`.
+3. **Professionalism**: It demonstrates to the client that you have an "Ops" mindset—thinking about how to fix things when they break, not just how they run when they work.
+
+Would you like me to help you create a specific "Interactive Debug" template that pauses the workflow automatically if a deployment fails, allowing you to inspect the environment in real-time?
+
+```
 Reference : https://github.com/apigee/apigee-deploy-maven-plugin
 Reference : https://github.com/argoproj/argo-workflows
 
