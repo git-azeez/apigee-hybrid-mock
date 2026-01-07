@@ -5,8 +5,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: main
-  
-  UPDATED: Using workload identiy 
   serviceAccountName: argo-workflow
 
   arguments:
