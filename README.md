@@ -38,8 +38,21 @@ kubectl apply -n argo -f [https://github.com/argoproj/argo-workflows/releases/do
 
 3. **Argo CLI**: (Optional, for easier management)
 ```bash
-curl -sLO [https://github.com/argoproj/argo-workflows/releases/latest/download/argo-linux-amd64.gz](https://github.com/argoproj/argo-workflows/releases/latest/download/argo-linux-amd64.gz)
-gunzip argo-linux-amd64.gz && chmod +x argo-linux-amd64 && sudo mv argo-linux-amd64 /usr/local/bin/argo
+
+# 1. Download the latest binary
+curl -sLO https://github.com/argoproj/argo-workflows/releases/latest/download/argo-linux-amd64.gz
+
+# 2. Unzip the file
+gunzip argo-linux-amd64.gz
+
+# 3. Make it executable
+chmod +x argo-linux-amd64
+
+# 4. Move it to your system path (sudo is required for /usr/local/bin)
+sudo mv argo-linux-amd64 /usr/local/bin/argo
+
+# 5. Verify the installation
+argo version
 
 ```
 
