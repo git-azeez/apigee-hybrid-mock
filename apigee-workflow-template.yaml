@@ -4,11 +4,9 @@ metadata:
   name: apigee-proxy-deployer
   namespace: argo
 spec:
-  # USES WORKLOAD IDENTITY: KSA 'argo-workflow' must be bound to your GSA
   serviceAccountName: argo-workflow 
   entrypoint: main
   
-  # 1. Define the Shared Volume
   volumeClaimTemplates:
     - metadata:
         name: workdir
@@ -23,7 +21,7 @@ spec:
       inputs:
         parameters:
           - name: repo_url
-          - name: proxy_name
+          - name: proxy_path  # Changed to match your command
           - name: apigee_env
       dag:
         tasks:
@@ -41,8 +39,10 @@ spec:
               parameters:
                 - name: apigee_env
                   value: "{{inputs.parameters.apigee_env}}"
+                - name: path
+                  value: "{{inputs.parameters.proxy_path}}"
 
-    # STEP 1: AUTHENTICATED GIT CLONE
+    # STEP 1: GIT CLONE
     - name: git-clone
       inputs:
         parameters:
@@ -55,7 +55,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: github-creds
-                key: token      # Corrected key name
+                key: token
           - name: GITHUB_USER
             valueFrom:
               secretKeyRef:
@@ -65,15 +65,11 @@ spec:
         args: 
           - |
             set -e
-            echo "--- Cleaning workspace volume ---"
-            # Delete hidden files too (like .git) to ensure fresh clone
+            echo "--- Cleaning workspace ---"
             rm -rf ./* .[a-zA-Z]* || true
             
             echo "--- Cloning repository ---"
-            # Strip https:// protocol if present to avoid duplication
             REPO_PATH=$(echo "{{inputs.parameters.url}}" | sed 's~https://~~')
-            
-            # Clone into current directory (.)
             git clone "https://${GITHUB_USER}:${GITHUB_TOKEN}@${REPO_PATH}" .
         volumeMounts:
           - name: workdir
@@ -84,28 +80,23 @@ spec:
       inputs:
         parameters:
           - name: apigee_env
+          - name: path
       container:
         image: maven:3.8.5-openjdk-11
-        workingDir: /src
+        # FIX: Dynamically set the working directory to the proxy folder
+        workingDir: /src/{{inputs.parameters.path}}
         command: [sh, -c]
-        # FIX: Removed Python dependency. 
-        # Using grep/cut to parse JSON is safer in minimal containers.
         args:
           - |
             set -e
-            
-            echo "--- 1. Fetching Workload Identity Token ---"
+            echo "--- 1. Fetching Token ---"
             TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
               "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
               | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
 
-            if [ -z "$TOKEN" ]; then 
-              echo "Error: Token generation failed. Check Workload Identity setup."
-              exit 1
-            fi
-            echo "Token generated successfully."
+            if [ -z "$TOKEN" ]; then echo "Token failed"; exit 1; fi
 
-            echo "--- 2. Executing Maven Deployment to {{inputs.parameters.apigee_env}} ---"
+            echo "--- 2. Deploying from {{inputs.parameters.path}} ---"
             mvn clean install -P{{inputs.parameters.apigee_env}} \
               -Dtoken="$TOKEN" \
               -Dapigee.options=update \
